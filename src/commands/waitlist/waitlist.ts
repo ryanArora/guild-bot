@@ -1,4 +1,4 @@
-import ICommandSettings from "../../interfaces/ICommandSettings";
+import { ICommandSettings } from "../../Client";
 
 const settings: ICommandSettings = {
   description: "Waitlist command",

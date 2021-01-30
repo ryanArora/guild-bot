@@ -1,19 +1,15 @@
-import Client from "../../Client";
-import { Message } from "discord.js";
-import ICommand from "../../interfaces/ICommand";
+import { ICommand, RunCallback } from "./../../Client";
 
-function WaitlistListCommand() {
-  async function run(client: Client, message: Message, args: string[]) {
+function WaitlistListCommand(): ICommand {
+  const run: RunCallback = async (client, message, args, settings) => {
     message.channel.send("waitlist list");
-  }
+  };
 
-  const cmd: ICommand = {
+  return {
     description: "Waitlist list",
     guildOnly: false,
     run,
   };
-
-  return cmd;
 }
 
 export default WaitlistListCommand();

@@ -5,6 +5,8 @@ import path from "path";
 
 const bot = new Client();
 
+bot.connectToDatabase();
+
 bot.registerCommandsIn(path.join(__dirname, "commands"));
 bot.registerEventsIn(path.join(__dirname, "events"));
 

@@ -1,19 +1,15 @@
-import Client from "../Client";
-import { Message } from "discord.js";
-import ICommand from "../interfaces/ICommand";
+import { RunCallback, ICommand } from "../Client";
 
-function PingCommand() {
-  async function run(client: Client, message: Message, args: string[]) {
+function PingCommand(): ICommand {
+  const run: RunCallback = async (client, message, args, settings) => {
     message.channel.send(`Latency is ${Date.now() - message.createdTimestamp}ms, pong!`);
-  }
+  };
 
-  const cmd: ICommand = {
+  return {
     description: "Pings discord",
     guildOnly: false,
     run,
   };
-
-  return cmd;
 }
 
 export default PingCommand();

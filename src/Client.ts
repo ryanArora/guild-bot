@@ -1,30 +1,51 @@
-import Discord, { ClientOptions, Message } from "discord.js";
+import Discord, { Collection, ClientOptions, Message } from "discord.js";
+import mongoose from "mongoose";
 import fs from "fs";
 import path from "path";
+import { IGuildSettings } from "./models/GuildSettings";
 
-import ICommand from "./interfaces/ICommand";
-import ICommandSettings from "./interfaces/ICommandSettings";
+export type RunCallback = (client: Client, message: Message, args: string[], settings: IGuildSettings | null) => void;
+export type HasPermissionCallback = (message: Message, settings: IGuildSettings | null) => boolean;
+
+export interface ICommandSettings {
+  description: string;
+  guildOnly: boolean;
+  hasPermission?: HasPermissionCallback;
+  defaultSubcommand?: string;
+}
+
+export interface ICommand extends ICommandSettings {
+  run: RunCallback;
+  subcommands?: Map<string, ICommand>;
+}
 
 export default class Client extends Discord.Client {
   prefix = "g?";
-  commands: Map<string, ICommand> = new Map();
+  commands: Collection<string, ICommand> = new Collection();
 
   constructor(options?: ClientOptions) {
     super(options);
   }
 
-  tryExecuteCommand(command: ICommand, message: Message, args: string[]) {
+  connectToDatabase() {
+    mongoose.connect(`mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}/${process.env.MONGO_DBNAME}?retryWrites=true&w=majority`, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+  }
+
+  tryExecuteCommand(command: ICommand, message: Message, args: string[], settings: IGuildSettings | null) {
     if (command.guildOnly && !message.guild) return;
 
     try {
       if (command.hasPermission) {
-        if (command.hasPermission(message) === false) {
+        if (command.hasPermission(message, settings) === false) {
           message.channel.send("You don't have permission to run that command!");
           return;
         }
       }
 
-      command.run(this, message, args);
+      command.run(this, message, args, settings);
     } catch (e) {
       message.channel.send(`An unexpected error occured while trying to run this command: \`${e}\``);
     }
@@ -36,7 +57,7 @@ export default class Client extends Discord.Client {
     console.log("Done registering commands!");
 
     function walk(dir: string) {
-      const commands: Map<string, ICommand> = new Map();
+      const commands: Collection<string, ICommand> = new Collection();
       const files = fs.readdirSync(dir);
 
       files.forEach((file: string) => {
@@ -63,7 +84,7 @@ export default class Client extends Discord.Client {
               hasPermission: options.hasPermission,
               defaultSubcommand: options.defaultSubcommand,
               subcommands,
-              run: (client: Client, message: Message, args: string[]) => {
+              run: (client, message, args, settings) => {
                 const subcommandName = args.shift();
                 let subcommand: ICommand | undefined = undefined;
 
@@ -74,7 +95,7 @@ export default class Client extends Discord.Client {
                 }
 
                 if (subcommand) {
-                  client.tryExecuteCommand(subcommand, message, args);
+                  client.tryExecuteCommand(subcommand, message, args, settings);
                 }
               },
             };
