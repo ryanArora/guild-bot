@@ -20,6 +20,7 @@ export default class Client extends Discord.Client {
       if (command.hasPermission) {
         if (command.hasPermission(message) === false) {
           message.channel.send("You don't have permission to run that command!");
+          return;
         }
       }
 
