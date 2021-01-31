@@ -3,15 +3,24 @@ import mongoose from "mongoose";
 import fs from "fs";
 import path from "path";
 import { IGuildSettings } from "./models/GuildSettings";
+import { toWordsOrdinal } from "number-to-words";
+import logger from "./logger";
 
 export type RunCallback = (client: Client, message: Message, args: string[], settings: IGuildSettings | null) => void;
 export type HasPermissionCallback = (message: Message, settings: IGuildSettings | null) => boolean;
+export type ArgumentValidatorCallback = (argument: string | undefined) => boolean;
+
+export interface IArgument {
+  name: string;
+  validator: ArgumentValidatorCallback;
+}
 
 export interface ICommandSettings {
   description: string;
   guildOnly: boolean;
   hasPermission?: HasPermissionCallback;
   defaultSubcommand?: string;
+  args?: (IArgument | null)[];
 }
 
 export interface ICommand extends ICommandSettings {
@@ -23,15 +32,26 @@ export default class Client extends Discord.Client {
   prefix = "g?";
   commands: Collection<string, ICommand> = new Collection();
 
+  logger = logger;
+
   constructor(options?: ClientOptions) {
     super(options);
   }
 
-  connectToDatabase() {
-    mongoose.connect(`mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}/${process.env.MONGO_DBNAME}?retryWrites=true&w=majority`, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+  start() {
+    mongoose
+      .connect(`mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}/${process.env.MONGO_DBNAME}?retryWrites=true&w=majority`, {
+        useCreateIndex: true,
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      })
+      .then(() => {
+        logger.info("Successfuly connected to database!");
+        this.login(process.env.DISCORD_TOKEN);
+      })
+      .catch((err) => {
+        logger.error("Failed to connect to database");
+      });
   }
 
   tryExecuteCommand(command: ICommand, message: Message, args: string[], settings: IGuildSettings | null) {
@@ -45,6 +65,29 @@ export default class Client extends Discord.Client {
         }
       }
 
+      if (command.args) {
+        let msg = "You have to provide";
+
+        command.args.forEach((argument: IArgument | null, index: number) => {
+          if (argument && !argument.validator(args[index] as string)) {
+            msg += ` a ${argument.name} as the ${toWordsOrdinal(index + 1)} argument,${command.args!.length - 2 === index ? " and" : ""}`;
+          }
+        });
+
+        if (msg.endsWith("and")) {
+          msg = msg.substring(0, msg.length - 4);
+        } else if (msg.endsWith(",")) {
+          msg = msg.substring(0, msg.length - 1);
+        }
+
+        msg += ".";
+
+        if (msg !== "You have to provide") {
+          message.channel.send(msg);
+          return;
+        }
+      }
+
       command.run(this, message, args, settings);
     } catch (e) {
       message.channel.send(`An unexpected error occured while trying to run this command: \`${e}\``);
@@ -54,7 +97,7 @@ export default class Client extends Discord.Client {
   registerCommandsIn(commandsDir: string) {
     let parentName: string | undefined = undefined;
     this.commands = walk(commandsDir);
-    console.log("Done registering commands!");
+    logger.info("Done registering commands!");
 
     function walk(dir: string) {
       const commands: Collection<string, ICommand> = new Collection();
@@ -119,6 +162,6 @@ export default class Client extends Discord.Client {
       this.on(eventName, event.bind(null, this));
     });
 
-    console.log("Done registering events!");
+    logger.info("Done registering events!");
   }
 }

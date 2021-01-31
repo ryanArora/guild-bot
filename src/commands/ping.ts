@@ -9,6 +9,24 @@ function PingCommand(): ICommand {
     description: "Pings discord",
     guildOnly: false,
     run,
+    args: [
+      {
+        name: "Discord ID",
+        validator: (arg) => arg === "bruh",
+      },
+      {
+        name: "lol",
+        validator: (arg) => arg === "bruh",
+      },
+      {
+        name: "lol",
+        validator: (arg) => arg === "bruh",
+      },
+      {
+        name: "lol",
+        validator: (arg) => arg === "bruh",
+      },
+    ],
   };
 }
 
