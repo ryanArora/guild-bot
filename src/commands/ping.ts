@@ -1,8 +1,8 @@
 import { RunCallback, ICommand } from "../Client";
 
 function PingCommand(): ICommand {
-  const run: RunCallback = async (client, message, args, settings) => {
-    message.channel.send(`Latency is ${Date.now() - message.createdTimestamp}ms, pong!`);
+  const run: RunCallback = async (client, message, args, settings, minecraftClient) => {
+    message.channel.send(`Latency is \`${Date.now() - message.createdTimestamp}ms\`, pong!`);
   };
 
   return {

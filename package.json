@@ -8,8 +8,10 @@
     "dev": "yarn clean && yarn build && node build/index.js"
   },
   "dependencies": {
+    "axios": "^0.21.1",
     "discord.js": "^12.5.1",
     "dotenv": "^8.2.0",
+    "minecraft-protocol": "^1.23.0",
     "mongoose": "^5.11.14",
     "number-to-words": "^1.2.4",
     "winston": "^3.3.3"

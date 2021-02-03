@@ -1,7 +1,7 @@
 import { ICommandSettings } from "../../Client";
 
 const settings: ICommandSettings = {
-  description: "Waitlist command",
+  description: "Tracks the people waiting to join the guild",
   guildOnly: true,
   defaultSubcommand: "list",
 };
